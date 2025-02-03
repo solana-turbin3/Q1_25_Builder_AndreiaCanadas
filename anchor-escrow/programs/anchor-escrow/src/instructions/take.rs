@@ -10,8 +10,8 @@ pub struct Take<'info> {
     pub taker: Signer<'info>,
     #[account(mut)]
     pub maker: SystemAccount<'info>,
-    pub mint_a: InterfaceAccount<'info, Mint>,
-    pub mint_b: InterfaceAccount<'info, Mint>,
+    pub mint_a: Box<InterfaceAccount<'info, Mint>>,
+    pub mint_b: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         init_if_needed,
@@ -19,14 +19,14 @@ pub struct Take<'info> {
         associated_token::mint = mint_a,
         associated_token::authority = taker
     )]
-    pub taker_ata_a: InterfaceAccount<'info, TokenAccount>,
+    pub taker_ata_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
         associated_token::mint = mint_b,
         associated_token::authority = taker
     )]
-    pub taker_ata_b: InterfaceAccount<'info, TokenAccount>,
+    pub taker_ata_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         init_if_needed,
@@ -34,7 +34,7 @@ pub struct Take<'info> {
         associated_token::mint = mint_b,
         associated_token::authority = maker
     )]
-    pub maker_ata_b: InterfaceAccount<'info, TokenAccount>,
+    pub maker_ata_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -44,13 +44,13 @@ pub struct Take<'info> {
         seeds = [b"escrow", maker.key().as_ref(), escrow.seed.to_le_bytes().as_ref()],
         bump = escrow.bump,
     )]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
 
     #[account(
         associated_token::mint = mint_a,
         associated_token::authority = escrow
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -58,7 +58,7 @@ pub struct Take<'info> {
 
 }
 impl<'info> Take<'info> {   //TBD - ongoing - to check
-    pub fn send_withdraw_and_close(&mut self) -> Result<()> {   
+    pub fn send(&mut self) -> Result<()> {   
 
         // send 
         let cpi_program = self.token_program.to_account_info();
@@ -73,6 +73,11 @@ impl<'info> Take<'info> {   //TBD - ongoing - to check
         let cpi_ctx = CpiContext::new(cpi_program, cpi_account);
 
         transfer_checked(cpi_ctx, self.vault.amount , self.mint_b.decimals)?;   // does this ensures that the taker sends the correct amount?
+    
+        Ok(())
+    }
+
+    pub fn withdraw_and_close(&mut self) -> Result<()> {
 
         // withdraw
         let cpi_program = self.token_program.to_account_info();

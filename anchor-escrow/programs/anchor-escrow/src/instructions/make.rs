@@ -11,15 +11,15 @@ use crate::state::escrow::Escrow;
 pub struct Make<'info> {
     #[account(mut)]
     pub maker: Signer<'info>,
-    pub mint_a: InterfaceAccount<'info, Mint>,
-    pub mint_b: InterfaceAccount<'info, Mint>,
+    pub mint_a: Box<InterfaceAccount<'info, Mint>>,
+    pub mint_b: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
         associated_token::mint = mint_a,
         associated_token::authority = maker,
     )]
-    pub maker_ata_a: InterfaceAccount<'info, TokenAccount>,
+    pub maker_ata_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         init,   // init already makes the account mutable
@@ -28,7 +28,7 @@ pub struct Make<'info> {
         bump,
         space = 8 + Escrow::INIT_SPACE,
     )]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
 
     #[account(
         init,
@@ -36,7 +36,7 @@ pub struct Make<'info> {
         associated_token::mint = mint_a,
         associated_token::authority = escrow,
     )]  //space does not need to be specified because it is not going to store data account (only amount of lamports), it is not dynamic 
-    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
